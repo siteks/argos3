@@ -166,7 +166,7 @@ namespace argos {
          cPos.Set(f_radius, 0.0f, 0.0f);
          cPos.RotateZ(cAngle);
          cPos += c_center;
-         cDir.Set(f_range, 0.0f, 0.0f);
+         cDir.Set(1.0f, 0.0f, 0.0f);
          cDir.RotateZ(cAngle);
          AddSensor(cPos, cDir, f_range, s_anchor);
       }
