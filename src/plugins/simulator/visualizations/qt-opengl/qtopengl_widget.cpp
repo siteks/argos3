@@ -10,6 +10,7 @@
 
 #include <argos3/core/utility/logging/argos_log.h>
 #include <argos3/core/utility/math/plane.h>
+#include <argos3/core/utility/math/matrix/rotationmatrix3.h>
 #include <argos3/core/simulator/simulator.h>
 #include <argos3/core/simulator/loop_functions.h>
 #include <argos3/core/simulator/space/space.h>
@@ -70,6 +71,15 @@ namespace argos {
       m_mapPressedKeys[DIRECTION_RIGHT]     = false;
       m_mapPressedKeys[DIRECTION_FORWARDS]  = false;
       m_mapPressedKeys[DIRECTION_BACKWARDS] = false;
+
+
+      xangle = old_xangle = 0.0f;
+      yangle = old_yangle = 0.0f;
+      xpos = old_xpos = 0.0f;
+      ypos = old_ypos = 0.0f;
+      distance = 1.0;
+
+      printf("initialise qt widget\n");
    }
 
    /****************************************/
@@ -539,7 +549,7 @@ namespace argos {
       const SBoundingBox& sBBox = c_entity.GetBoundingBox();
       glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
       glDisable(GL_LIGHTING);
-      glLineWidth(3.0f);
+      glLineWidth(1.0f);
       glColor3f(1.0f, 1.0f, 1.0f);
       /* This part covers the top and bottom faces (parallel to XY) */
       glBegin(GL_QUADS);
@@ -839,7 +849,7 @@ namespace argos {
       /* Draw walls */
       glDisable(GL_CULL_FACE);
       glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-      glLineWidth(10.0f);
+      glLineWidth(1.0f);
       glColor3f(0.0f, 0.0f, 0.0f);
       /* This part covers the top and bottom faces (parallel to XY) */
       glBegin(GL_QUADS);
@@ -890,6 +900,7 @@ namespace argos {
 
    void CQTOpenGLWidget::timerEvent(QTimerEvent* pc_event) {
       StepExperiment();
+      printf("in timer\n");
    }
 
    /****************************************/
@@ -969,33 +980,117 @@ namespace argos {
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::mouseMoveEvent(QMouseEvent* pc_event) {
+   void CQTOpenGLWidget::updatecam()
+   {
+
+      CQTOpenGLCamera::SSettings &cs = m_cCamera.GetActiveSettings();
+      cs.Target = CVector3(0,0,0);
+      cs.Up = CVector3(0,0,1);
+      CRotationMatrix3 ZR(CRadians(-xangle), CRadians(0), CRadians(0));
+      CRotationMatrix3 XR(CRadians(0), CRadians(yangle), CRadians(0));
+      cs.Position = ZR * (XR * CVector3(-2 * distance, 0, 2 * distance));
+      cs.Target = cs.Target + CVector3(xpos, ypos, 0);
+      cs.Position = cs.Position + CVector3(xpos, ypos, 0);
+   }
+
+    void CQTOpenGLWidget::wheelEvent(QWheelEvent* pc_event) {
+      if (pc_event->delta() > 0)
+         distance /= zscale;
+      else
+         distance *= zscale;
+      printf("wheel %d %f\n", pc_event->delta(), distance);
+      updatecam();
+      update();
+   }
+
+    void CQTOpenGLWidget::mouseMoveEvent(QMouseEvent *pc_event)
+   {
       /*
        * Moving while mouse grabbed -> camera movement
        */
-      if(m_bMouseGrabbed) {
-         if(! (pc_event->modifiers() & Qt::ControlModifier)) {
+      //printf("%10d %10d %x\n", pc_event->x(), pc_event->y(), pc_event->buttons());
+      if (m_bMouseGrabbed)
+      {
+         if (!(pc_event->modifiers() & Qt::ControlModifier))
+         {
             /*
              * Camera movement
              */
-            if(pc_event->buttons() == Qt::LeftButton) {
-               if (m_bInvertMouse) m_cCamera.Rotate( pc_event->pos() - m_cMouseGrabPos);
-               else m_cCamera.Rotate( m_cMouseGrabPos - pc_event->pos());
-               m_cMouseGrabPos = pc_event->pos();
-               update();
+            if (1)
+            {
+               // Right button   - spin
+               // Wheel          - zoom
+               // Middle button  - pan
+               if (pc_event->buttons() == Qt::RightButton)
+               {
+                  // Move camera around the surface of a sphere centered at the current gui origin.
+                  // The gui origin is a point on the ground plane. We move this using the pan
+                  QPoint mpos = pc_event->pos();
+                  QPoint delta(mpos - m_cMouseGrabPos);
+                  float dx = delta.x() * xrscale;
+                  float dy = delta.y() * yrscale;
+
+                  yangle = dy + old_yangle;
+                  xangle = dx + old_xangle;
+                  //printf("dx:%10d dy:%10d xa:%10f ya:%10f\n", delta.x(), delta.y(), xangle, yangle);
+                   old_xangle = xangle;
+                   old_yangle = yangle;
+
+                  // Camera is defined by position, target, and up vectors
+                  //cs.Position = CVector3(0,0,0);
+                  //printf("%10f %10f %10f\n", cs.Position.GetX(), cs.Position.GetY(), cs.Position.GetZ());
+
+                   updatecam();
+
+                  //m_cCamera.RotateGlobalZ(CRadians(xangle));
+                  m_cMouseGrabPos = mpos;
+                  update();
+               }
+                else if (pc_event->buttons() == Qt::MiddleButton)
+               {
+                  QPoint mpos = pc_event->pos();
+                  QPoint delta(mpos - m_cMouseGrabPos);
+                   float lx, ly;
+                    lx = delta.x() * xmscale;
+                    ly = delta.y() * ymscale;
+                    // transform to world frame
+                    float dx = lx * cos(-xangle + M_PI_2) - ly * sin(-xangle + M_PI_2);
+                    float dy = lx * sin(-xangle + M_PI_2) + ly * cos(-xangle + M_PI_2);
+                    xpos = dx + old_xpos;
+                    ypos = dy + old_ypos;
+                   printf("%f %f\n", xpos, ypos);
+                  old_xpos = xpos;
+                  old_ypos = ypos;
+                  updatecam();
+                  m_cMouseGrabPos = mpos;
+                   update();
+               }
             }
-            else if(pc_event->buttons() == Qt::RightButton) {
-               QPoint cDelta(pc_event->pos() - m_cMouseGrabPos);
-               m_cCamera.Move(-cDelta.y(), cDelta.x(), 0);
-               m_cMouseGrabPos = pc_event->pos();
-               update();
-            }
-            else if(pc_event->buttons() == Qt::MidButton) {
-               QPoint cDelta(pc_event->pos() - m_cMouseGrabPos);
-               m_cCamera.Move(0, 0, cDelta.y());
-               m_cMouseGrabPos = pc_event->pos();
-               update();
-            }
+            else
+             {
+                 if (pc_event->buttons() == Qt::LeftButton)
+                 {
+                     if (m_bInvertMouse) m_cCamera.Rotate(pc_event->pos() - m_cMouseGrabPos);
+                     else m_cCamera.Rotate(m_cMouseGrabPos - pc_event->pos());
+                     m_cMouseGrabPos = pc_event->pos();
+                     //printf("%10f %10f\n", m_cMouseGrabPos.x(), m_cMouseGrabPos.y());
+                     update();
+                 }
+                 else if (pc_event->buttons() == Qt::RightButton)
+                 {
+                     QPoint cDelta(pc_event->pos() - m_cMouseGrabPos);
+                     m_cCamera.Move(-cDelta.y(), cDelta.x(), 0);
+                     m_cMouseGrabPos = pc_event->pos();
+                     update();
+                 }
+                 else if (pc_event->buttons() == Qt::MidButton)
+                 {
+                     QPoint cDelta(pc_event->pos() - m_cMouseGrabPos);
+                     m_cCamera.Move(0, 0, cDelta.y());
+                     m_cMouseGrabPos = pc_event->pos();
+                     update();
+                 }
+             }
          }
       }
    }

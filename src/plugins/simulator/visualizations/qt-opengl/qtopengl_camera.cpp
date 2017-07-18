@@ -321,7 +321,15 @@ namespace argos {
       m_sSettings[m_unActiveSettings]
          .Target += m_sSettings[m_unActiveSettings].Forward;
    }
-   
+
+    void CQTOpenGLCamera::RotateGlobalZ(const CRadians & rz)
+    {
+       m_sSettings[m_unActiveSettings].RotateLeftRight2(rz);
+    }
+    void CQTOpenGLCamera::RotateUpDown(const CRadians & ry)
+    {
+       m_sSettings[m_unActiveSettings].RotateUpDown(ry);
+    }
    /****************************************/
    /****************************************/
 

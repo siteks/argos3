@@ -63,7 +63,7 @@ namespace argos {
       glPushAttrib(GL_LINE_BIT);
       /* Set line attributes */
       glEnable(GL_LINE_SMOOTH);
-      glLineWidth(2.0);
+      glLineWidth(1.0);
       /* Set color */
       SetMainBodyMaterial();
       /* Draw ray */

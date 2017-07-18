@@ -332,6 +332,7 @@ namespace argos {
       virtual void keyPressEvent(QKeyEvent* pc_event);
       virtual void keyReleaseEvent(QKeyEvent* pc_event);
       virtual void resizeEvent(QResizeEvent* pc_event);
+      virtual void wheelEvent(QWheelEvent* pc_event);
       void reactToKeyEvent();
 
    private:
@@ -408,6 +409,17 @@ namespace argos {
       QMap<EDirection, int> m_mapPressedKeys;
 
       CRay3 m_cSelectionRay;
+
+       void updatecam();
+
+       float xangle, xpos, old_xangle, old_xpos;
+       float yangle, ypos, old_yangle, old_ypos;
+       const float xrscale = 0.003f;
+       const float yrscale = 0.003f;
+       const float xmscale = 0.002f;
+       const float ymscale = -0.002f;
+       const float zscale = 1.04;
+       float distance;
    };
 
 }

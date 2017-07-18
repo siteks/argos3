@@ -108,6 +108,9 @@ namespace argos {
       }
 
       void Rotate(const QPoint& c_delta);
+      void RotateGlobalZ(const CRadians & rz);
+      void RotateUpDown(const CRadians & ry);
+
 
       void Move(SInt32 n_forwards_backwards,
                 SInt32 n_sideways,
