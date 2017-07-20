@@ -29,7 +29,7 @@ namespace argos {
       m_unVertices(20) {
 
       /* Reserve the needed display lists */
-      m_unBaseList = glGenLists(1);
+      m_unBaseList = glGenLists(2);
       m_unBodyList = m_unBaseList;
       m_unLEDList = m_unBaseList + 1;
 

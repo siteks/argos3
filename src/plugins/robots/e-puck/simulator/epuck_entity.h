@@ -7,23 +7,35 @@
 #ifndef EPUCK_ENTITY_H
 #define EPUCK_ENTITY_H
 
-namespace argos {
+namespace argos
+{
    class CControllableEntity;
+
    class CEmbodiedEntity;
+
    class CEPuckEntity;
+
    class CGroundSensorEquippedEntity;
+
    class CLEDEquippedEntity;
+
    class CLightSensorEquippedEntity;
+
    class CProximitySensorEquippedEntity;
+
+   class CPerspectiveCameraEquippedEntity;
+
    class CRABEquippedEntity;
 }
 
 #include <argos3/core/simulator/entity/composable_entity.h>
 #include <argos3/plugins/simulator/entities/wheeled_entity.h>
 
-namespace argos {
+namespace argos
+{
 
-   class CEPuckEntity : public CComposableEntity {
+   class CEPuckEntity : public CComposableEntity
+   {
 
    public:
 
@@ -33,52 +45,63 @@ namespace argos {
 
       CEPuckEntity();
 
-      CEPuckEntity(const std::string& str_id,
-                   const std::string& str_controller_id,
-                   const CVector3& c_position = CVector3(),
-                   const CQuaternion& c_orientation = CQuaternion(),
+      CEPuckEntity(const std::string &str_id,
+                   const std::string &str_controller_id,
+                   const CVector3 &c_position = CVector3(),
+                   const CQuaternion &c_orientation = CQuaternion(),
                    Real f_rab_range = 0.8f,
                    size_t un_rab_data_size = 2);
-      
-      virtual void Init(TConfigurationNode& t_tree);
+
+      virtual void Init(TConfigurationNode &t_tree);
+
       virtual void Reset();
+
       virtual void Destroy();
 
       virtual void UpdateComponents();
-      
-      inline CControllableEntity& GetControllableEntity() {
+
+      inline CControllableEntity &GetControllableEntity()
+      {
          return *m_pcControllableEntity;
       }
 
-      inline CEmbodiedEntity& GetEmbodiedEntity() {
+      inline CEmbodiedEntity &GetEmbodiedEntity()
+      {
          return *m_pcEmbodiedEntity;
       }
 
-      inline CGroundSensorEquippedEntity& GetGroundSensorEquippedEntity() {
+      inline CGroundSensorEquippedEntity &GetGroundSensorEquippedEntity()
+      {
          return *m_pcGroundSensorEquippedEntity;
       }
 
-      inline CLEDEquippedEntity& GetLEDEquippedEntity() {
+      inline CLEDEquippedEntity &GetLEDEquippedEntity()
+      {
          return *m_pcLEDEquippedEntity;
       }
 
-      inline CLightSensorEquippedEntity& GetLightSensorEquippedEntity() {
+      inline CLightSensorEquippedEntity &GetLightSensorEquippedEntity()
+      {
          return *m_pcLightSensorEquippedEntity;
       }
 
-      inline CProximitySensorEquippedEntity& GetProximitySensorEquippedEntity() {
+      inline CProximitySensorEquippedEntity &GetProximitySensorEquippedEntity()
+      {
          return *m_pcProximitySensorEquippedEntity;
       }
 
-      inline CRABEquippedEntity& GetRABEquippedEntity() {
+      inline CRABEquippedEntity &GetRABEquippedEntity()
+      {
          return *m_pcRABEquippedEntity;
       }
 
-      inline CWheeledEntity& GetWheeledEntity() {
+      inline CWheeledEntity &GetWheeledEntity()
+      {
          return *m_pcWheeledEntity;
       }
 
-      virtual std::string GetTypeDescription() const {
+      virtual std::string GetTypeDescription() const
+      {
          return "e-puck";
       }
 
@@ -88,14 +111,15 @@ namespace argos {
 
    private:
 
-      CControllableEntity*                   m_pcControllableEntity;
-      CEmbodiedEntity*                       m_pcEmbodiedEntity;
-      CGroundSensorEquippedEntity*           m_pcGroundSensorEquippedEntity;
-      CLEDEquippedEntity*                    m_pcLEDEquippedEntity;
-      CLightSensorEquippedEntity*            m_pcLightSensorEquippedEntity;
-      CProximitySensorEquippedEntity*        m_pcProximitySensorEquippedEntity;
-      CRABEquippedEntity*                    m_pcRABEquippedEntity;
-      CWheeledEntity*                        m_pcWheeledEntity;
+      CControllableEntity *m_pcControllableEntity;
+      CEmbodiedEntity *m_pcEmbodiedEntity;
+      CGroundSensorEquippedEntity *m_pcGroundSensorEquippedEntity;
+      CLEDEquippedEntity *m_pcLEDEquippedEntity;
+      CLightSensorEquippedEntity *m_pcLightSensorEquippedEntity;
+      CProximitySensorEquippedEntity *m_pcProximitySensorEquippedEntity;
+      CRABEquippedEntity *m_pcRABEquippedEntity;
+      CPerspectiveCameraEquippedEntity *m_pcPerspectiveCameraEquippedEntity;
+      CWheeledEntity *m_pcWheeledEntity;
    };
 
 }

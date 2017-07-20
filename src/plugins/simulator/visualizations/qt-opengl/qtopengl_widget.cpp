@@ -28,33 +28,34 @@
 #define GL_MULTISAMPLE 0x809D
 #endif
 
-namespace argos {
+namespace argos
+{
 
-   static const Real ASPECT_RATIO         = 4.0f / 3.0f;
+   static const Real ASPECT_RATIO = 4.0f / 3.0f;
    static const UInt32 SELECT_BUFFER_SIZE = 128;
-   
+
    /****************************************/
    /****************************************/
 
-   CQTOpenGLWidget::CQTOpenGLWidget(QWidget* pc_parent,
-                                    CQTOpenGLMainWindow& c_main_window,
-                                    CQTOpenGLUserFunctions& c_user_functions) :
-      QOpenGLWidget(pc_parent),
-      m_cMainWindow(c_main_window),
-      m_cUserFunctions(c_user_functions),
-      nTimerId(-1),
-      m_bFastForwarding(false),
-      m_nDrawFrameEvery(1),
-      m_nFrameCounter(0),
-      m_bMouseGrabbed(false),
-      m_bShiftPressed(false),
-      m_bInvertMouse(false),
-      m_cSimulator(CSimulator::GetInstance()),
-      m_cSpace(m_cSimulator.GetSpace()),
-      m_bUsingFloorTexture(false),
-      m_pcFloorTexture(NULL),
-      m_pcGroundTexture(NULL),
-      m_punSelectionBuffer(new GLuint[SELECT_BUFFER_SIZE])
+   CQTOpenGLWidget::CQTOpenGLWidget(QWidget *pc_parent,
+                                    CQTOpenGLMainWindow &c_main_window,
+                                    CQTOpenGLUserFunctions &c_user_functions) :
+         QOpenGLWidget(pc_parent),
+         m_cMainWindow(c_main_window),
+         m_cUserFunctions(c_user_functions),
+         nTimerId(-1),
+         m_bFastForwarding(false),
+         m_nDrawFrameEvery(1),
+         m_nFrameCounter(0),
+         m_bMouseGrabbed(false),
+         m_bShiftPressed(false),
+         m_bInvertMouse(false),
+         m_cSimulator(CSimulator::GetInstance()),
+         m_cSpace(m_cSimulator.GetSpace()),
+         m_bUsingFloorTexture(false),
+         m_pcFloorTexture(NULL),
+         m_pcGroundTexture(NULL),
+         m_punSelectionBuffer(new GLuint[SELECT_BUFFER_SIZE])
    {
       /* Set the widget's size policy */
       QSizePolicy cSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
@@ -65,11 +66,11 @@ namespace argos {
       /* Force size and geometry */
       updateGeometry();
       /* Keys */
-      m_mapPressedKeys[DIRECTION_UP]        = false;
-      m_mapPressedKeys[DIRECTION_DOWN]      = false;
-      m_mapPressedKeys[DIRECTION_LEFT]      = false;
-      m_mapPressedKeys[DIRECTION_RIGHT]     = false;
-      m_mapPressedKeys[DIRECTION_FORWARDS]  = false;
+      m_mapPressedKeys[DIRECTION_UP] = false;
+      m_mapPressedKeys[DIRECTION_DOWN] = false;
+      m_mapPressedKeys[DIRECTION_LEFT] = false;
+      m_mapPressedKeys[DIRECTION_RIGHT] = false;
+      m_mapPressedKeys[DIRECTION_FORWARDS] = false;
       m_mapPressedKeys[DIRECTION_BACKWARDS] = false;
 
 
@@ -85,11 +86,13 @@ namespace argos {
    /****************************************/
    /****************************************/
 
-   CQTOpenGLWidget::~CQTOpenGLWidget() {
+   CQTOpenGLWidget::~CQTOpenGLWidget()
+   {
       makeCurrent();
       delete m_pcGroundTexture;
       glDeleteLists(1, m_unArenaList);
-      if(m_bUsingFloorTexture) {
+      if (m_bUsingFloorTexture)
+      {
          delete m_pcFloorTexture;
          glDeleteLists(1, m_unFloorList);
       }
@@ -100,7 +103,8 @@ namespace argos {
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::initializeGL() {
+   void CQTOpenGLWidget::initializeGL()
+   {
       /* Initializes the openGL functions */
       initializeOpenGLFunctions();
       /* Set clear color */
@@ -112,7 +116,8 @@ namespace argos {
                                           QOpenGLTexture::Linear);
 #ifdef ARGOS_WITH_FREEIMAGE
       /* Now take care of the floor entity */
-      try {
+      try
+      {
          /* Create an image to use as texture */
          m_cSpace.GetFloorEntity().SaveAsImage("/tmp/argos_floor.png");
          m_bUsingFloorTexture = true;
@@ -122,17 +127,18 @@ namespace argos {
                                             QOpenGLTexture::Linear);
          m_cSpace.GetFloorEntity().ClearChanged();
       }
-      catch(CARGoSException& ex) {}
+      catch (CARGoSException &ex)
+      {}
 #endif
       /* Nicest hints */
       glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
       glHint(GL_TEXTURE_COMPRESSION_HINT, GL_NICEST);
       /* Setup lighting */
-      GLfloat pfLightAmbient[]  = {   .2,   .2,  .2, 1. };
-      GLfloat pfLightDiffuse[]  = {   .8,   .8,  .8, 1. };
-      GLfloat pfLightPosition[] = { 50. , 50. , 2. , 1. };
-      glLightfv(GL_LIGHT0, GL_AMBIENT,  pfLightAmbient);
-      glLightfv(GL_LIGHT0, GL_DIFFUSE,  pfLightDiffuse);
+      GLfloat pfLightAmbient[] = {.2, .2, .2, 1.};
+      GLfloat pfLightDiffuse[] = {.8, .8, .8, 1.};
+      GLfloat pfLightPosition[] = {50., 50., 2., 1.};
+      glLightfv(GL_LIGHT0, GL_AMBIENT, pfLightAmbient);
+      glLightfv(GL_LIGHT0, GL_DIFFUSE, pfLightDiffuse);
       glLightfv(GL_LIGHT0, GL_POSITION, pfLightPosition);
       glEnable(GL_LIGHT0);
    }
@@ -140,7 +146,8 @@ namespace argos {
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::paintGL() {
+   void CQTOpenGLWidget::paintGL()
+   {
       /* Clear accumulator buffer */
       glClearAccum(0.0, 0.0, 0.0, 0.0);
       /* Clear color buffer and depth buffer */
@@ -167,19 +174,22 @@ namespace argos {
       /* Draw the arena */
       DrawArena();
       /* Draw the objects */
-      CEntity::TVector& vecEntities = m_cSpace.GetRootEntityVector();
-      for(CEntity::TVector::iterator itEntities = vecEntities.begin();
-          itEntities != vecEntities.end();
-          ++itEntities) {
+      CEntity::TVector &vecEntities = m_cSpace.GetRootEntityVector();
+      for (CEntity::TVector::iterator itEntities = vecEntities.begin();
+           itEntities != vecEntities.end();
+           ++itEntities)
+      {
          glPushMatrix();
          CallEntityOperation<CQTOpenGLOperationDrawNormal, CQTOpenGLWidget, void>(*this, **itEntities);
          m_cUserFunctions.Call(**itEntities);
          glPopMatrix();
       }
       /* Draw the selected object, if necessary */
-      if(m_sSelectionInfo.IsSelected) {
+      if (m_sSelectionInfo.IsSelected)
+      {
          glPushMatrix();
-         CallEntityOperation<CQTOpenGLOperationDrawSelected, CQTOpenGLWidget, void>(*this, *vecEntities[m_sSelectionInfo.Index]);
+         CallEntityOperation<CQTOpenGLOperationDrawSelected, CQTOpenGLWidget, void>(*this,
+                                                                                    *vecEntities[m_sSelectionInfo.Index]);
          glPopMatrix();
       }
       /* Draw in world */
@@ -193,8 +203,8 @@ namespace argos {
       glLineWidth(1.0f);
       glBegin(GL_LINES);
       glColor3f(1.0, 0.0, 0.0);
-      const CVector3& cStart = m_cSelectionRay.GetStart();
-      const CVector3& cEnd = m_cSelectionRay.GetEnd();
+      const CVector3 &cStart = m_cSelectionRay.GetStart();
+      const CVector3 &cEnd = m_cSelectionRay.GetEnd();
       glVertex3f(cStart.GetX(), cStart.GetY(), cStart.GetZ());
       glVertex3f(cEnd.GetX(), cEnd.GetY(), cEnd.GetZ());
       glEnd();
@@ -212,18 +222,19 @@ namespace argos {
       // cPainter.drawText(rect(), QString("%1 FPS").arg(m_fFPS, 0, 'f', 0));
       cPainter.end();
       /* Grab frame, if necessary */
-      if(m_sFrameGrabData.Grabbing) {
+      if (m_sFrameGrabData.Grabbing)
+      {
          QString strFileName = QString("%1/%2%3.%4")
-            .arg(m_sFrameGrabData.Directory)
-            .arg(m_sFrameGrabData.BaseName)
-            .arg(m_cSpace.GetSimulationClock(), 5, 10, QChar('0'))
-            .arg(m_sFrameGrabData.Format);
+               .arg(m_sFrameGrabData.Directory)
+               .arg(m_sFrameGrabData.BaseName)
+               .arg(m_cSpace.GetSimulationClock(), 5, 10, QChar('0'))
+               .arg(m_sFrameGrabData.Format);
          QToolTip::showText(pos() + geometry().center(), "Stored frame to \"" + strFileName);
          grabFramebuffer()
-            .save(
-               strFileName,
-               0,
-               m_sFrameGrabData.Quality);
+               .save(
+                     strFileName,
+                     0,
+                     m_sFrameGrabData.Quality);
       }
    }
 
@@ -231,7 +242,8 @@ namespace argos {
    /****************************************/
 
    CRay3 CQTOpenGLWidget::RayFromWindowCoord(int n_x,
-                                             int n_y) {
+                                             int n_y)
+   {
       /* Make sure OpenGL context is correct */
       makeCurrent();
       /* Rescale coordinates by devicePixelRatio */
@@ -277,7 +289,8 @@ namespace argos {
    /****************************************/
 
    CVector3 CQTOpenGLWidget::GetWindowCoordInWorld(int n_x,
-                                                   int n_y) {
+                                                   int n_y)
+   {
       /* Make sure OpenGL context is correct */
       makeCurrent();
       /* Rescale coordinates by devicePixelRatio */
@@ -301,7 +314,7 @@ namespace argos {
       /* Read the z coordinate from the depth buffer in the back buffer */
       GLfloat fWinZ;
       glReadBuffer(GL_BACK);
-      glReadPixels(n_x, (GLint)fWinY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &fWinZ);
+      glReadPixels(n_x, (GLint) fWinY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &fWinZ);
       /* Get the actual position in the world */
       GLdouble fWorldX, fWorldY, fWorldZ;
       gluUnProject(fWinX, fWinY, fWinZ,
@@ -318,7 +331,8 @@ namespace argos {
    /****************************************/
    /****************************************/
 
-   CEntity* CQTOpenGLWidget::GetSelectedEntity() {
+   CEntity *CQTOpenGLWidget::GetSelectedEntity()
+   {
       return (m_sSelectionInfo.IsSelected ?
               m_cSpace.GetRootEntityVector()[m_sSelectionInfo.Index] :
               NULL);
@@ -327,22 +341,25 @@ namespace argos {
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::SelectEntity(CEntity& c_entity) {
+   void CQTOpenGLWidget::SelectEntity(CEntity &c_entity)
+   {
       /* Look for the idx corresponding to the entity */
       size_t unIdx = 0;
-      while(m_cSpace.GetRootEntityVector()[unIdx] != &c_entity)
+      while (m_cSpace.GetRootEntityVector()[unIdx] != &c_entity)
          ++unIdx;
       /* Check whether an entity had previously been selected */
-      if(m_sSelectionInfo.IsSelected) {
+      if (m_sSelectionInfo.IsSelected)
+      {
          /* An entity had previously been selected */
          /* Is that entity already selected? */
-         if(m_sSelectionInfo.Index == unIdx) return;
+         if (m_sSelectionInfo.Index == unIdx) return;
          /* Deselect the previous one */
          emit EntityDeselected(m_sSelectionInfo.Index);
          m_cUserFunctions.EntityDeselected(
-            *m_cSpace.GetRootEntityVector()[m_sSelectionInfo.Index]);
+               *m_cSpace.GetRootEntityVector()[m_sSelectionInfo.Index]);
       }
-      else {
+      else
+      {
          /* No entity had previously been selected */
          m_sSelectionInfo.IsSelected = true;
       }
@@ -350,20 +367,21 @@ namespace argos {
       m_sSelectionInfo.Index = unIdx;
       emit EntitySelected(unIdx);
       m_cUserFunctions.EntitySelected(
-         *m_cSpace.GetRootEntityVector()[unIdx]);
+            *m_cSpace.GetRootEntityVector()[unIdx]);
       update();
    }
 
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::DeselectEntity() {
+   void CQTOpenGLWidget::DeselectEntity()
+   {
       /* If no entity was selected, nothing to do */
-      if(!m_sSelectionInfo.IsSelected) return;
+      if (!m_sSelectionInfo.IsSelected) return;
       /* Deselect the entity */
       emit EntityDeselected(m_sSelectionInfo.Index);
       m_cUserFunctions.EntityDeselected(
-         *m_cSpace.GetRootEntityVector()[m_sSelectionInfo.Index]);
+            *m_cSpace.GetRootEntityVector()[m_sSelectionInfo.Index]);
       m_sSelectionInfo.IsSelected = false;
       update();
    }
@@ -372,101 +390,190 @@ namespace argos {
    /****************************************/
 
    void CQTOpenGLWidget::SelectInScene(UInt32 un_x,
-                                       UInt32 un_y) {
+                                       UInt32 un_y)
+   {
       /* Make sure OpenGL context is correct */
       makeCurrent();
-      un_x *= devicePixelRatio();
-      un_y *= devicePixelRatio();
-      /* Used to store the viewport size */
-      GLint nViewport[4];
-      /* Set the selection buffer */
-      glSelectBuffer(SELECT_BUFFER_SIZE, m_punSelectionBuffer);
-      /* Switch to select mode */
-      glRenderMode(GL_SELECT);
-      /* Set the projection matrix */
-      glMatrixMode(GL_PROJECTION);
-      glLoadIdentity();
-      /* Set the viewport */
-      glGetIntegerv(GL_VIEWPORT, nViewport);
-      gluPickMatrix(un_x,
-                    nViewport[3]-un_y,
-                    5, 5,
-                    nViewport);
-      gluPerspective(m_cCamera.GetActiveSettings().YFieldOfView.GetValue(),
-                     ASPECT_RATIO,
-                     0.1f, 1000.0f);
-      glMatrixMode(GL_MODELVIEW);
-      glLoadIdentity();
-      m_cCamera.Look();
-      /* Prepare name stack */
-      glInitNames();
-      /* Draw the objects */
-      CEntity::TVector& vecEntities = m_cSpace.GetRootEntityVector();
-      for(size_t i = 0; i < vecEntities.size(); ++i) {
-         glPushName(i);
-         glPushMatrix();
-         CallEntityOperation<CQTOpenGLOperationDrawNormal, CQTOpenGLWidget, void>(*this, *vecEntities[i]);
-         glPopMatrix();
-         glPopName();
-      }
-      glFlush();
-      /* Return to normal rendering mode and get hit count */
-      bool bWasSelected = m_sSelectionInfo.IsSelected;
-      UInt32 unHits = glRenderMode(GL_RENDER);
-      if (unHits == 0) {
-         /* No hits, deselect what was selected */
-         m_sSelectionInfo.IsSelected = false;
-         if(bWasSelected) {
-            emit EntityDeselected(m_sSelectionInfo.Index);
-            m_cUserFunctions.EntityDeselected(
-               *m_cSpace.GetRootEntityVector()[m_sSelectionInfo.Index]);
-         }
-      }
-      else {
-         /* There are hits!
-          * Process them, keeping the closest hit
-          */
-         GLuint* punByte = m_punSelectionBuffer;
-         GLuint unMinZ = 0xffffffff;
-         GLuint* punName = NULL;
-         for (UInt32 i = 0; i < unHits; i++) {	
-            GLuint unNames = *punByte;
-            ++punByte;
-            if (*punByte < unMinZ) {
-               unMinZ = *punByte;
-               punName = punByte+2;
+      //un_x *= devicePixelRatio();
+      //un_y *= devicePixelRatio();
+
+
+      CRay3 r = RayFromWindowCoord(un_x, un_y);
+      CVector3 i;
+      bool doesintersect = r.Intersects(CPlane(), i);
+      printf("start:(%f,%f,%f) end:(%f,%f,%f) intersect:%f %f %f\n",
+             r.GetStart().GetX(), r.GetStart().GetY(), r.GetStart().GetZ(),
+             r.GetEnd().GetX(), r.GetEnd().GetY(), r.GetEnd().GetZ(), i.GetX(), i.GetY(), i.GetZ());
+      float mx = i.GetX();
+      float my = i.GetY();
+
+      if (doesintersect)
+      {
+         CEntity::TVector all_bodies;
+         m_cSpace.GetEntitiesMatching(all_bodies, "body");
+         CEntity::TVector &all_root_entities = m_cSpace.GetRootEntityVector();
+         printf("there are %d entities\n", all_bodies.size());
+         for (int j = 0; j < all_bodies.size(); j++)
+         {
+            CEmbodiedEntity *e = static_cast<CEmbodiedEntity *>(all_bodies[j]);
+            SBoundingBox b = e->GetBoundingBox();
+            if (e->IsMovable()
+                && (mx > b.MinCorner.GetX())
+                && (mx < b.MaxCorner.GetX())
+                && (my > b.MinCorner.GetY())
+                && (my < b.MaxCorner.GetY()))
+            {
+               // Stop at the first intersection with bounding box of movable object. Nicer would be
+               // nearest to the camera..
+               //
+               // We now need to find the index into the vector of root entities
+               CEntity &r = e->GetRootEntity();
+               for (int k = 0; k < all_root_entities.size(); k++)
+               {
+                  if (all_root_entities[k]->GetId() == r.GetId().c_str())
+                  {
+                     //
+                     bool bWasSelected = m_sSelectionInfo.IsSelected;
+                     if (bWasSelected &&
+                         (m_sSelectionInfo.Index == k))
+                     {
+                        /* The user clicked on the selected entity, deselect it */
+                        emit EntityDeselected(m_sSelectionInfo.Index);
+                        m_sSelectionInfo.IsSelected = false;
+                        m_cUserFunctions.EntitySelected(
+                              *m_cSpace.GetRootEntityVector()[m_sSelectionInfo.Index]);
+                     }
+                     if (bWasSelected &&
+                         (m_sSelectionInfo.Index != k))
+                     {
+                        /* The user clicked on a different entity from the selected one */
+                        emit EntityDeselected(m_sSelectionInfo.Index);
+                        m_cUserFunctions.EntityDeselected(
+                              *m_cSpace.GetRootEntityVector()[m_sSelectionInfo.Index]);
+                        m_sSelectionInfo.Index = k;
+                        emit EntitySelected(m_sSelectionInfo.Index);
+                        m_cUserFunctions.EntitySelected(
+                              *m_cSpace.GetRootEntityVector()[m_sSelectionInfo.Index]);
+                     }
+                     else
+                     {
+                        /* There was nothing selected, and the user clicked on an entity */
+                        m_sSelectionInfo.IsSelected = true;
+                        m_sSelectionInfo.Index = k;
+                        emit EntitySelected(m_sSelectionInfo.Index);
+                        m_cUserFunctions.EntitySelected(
+                              *m_cSpace.GetRootEntityVector()[m_sSelectionInfo.Index]);
+                     }
+                     break;
+                  }
+               }
+               break;
             }
-            punByte += unNames+2;
          }
-         /* Now *punName contains the closest hit */
-         if(bWasSelected &&
-            (m_sSelectionInfo.Index == *punName)) {
-            /* The user clicked on the selected entity, deselect it */
-            emit EntityDeselected(m_sSelectionInfo.Index);
-            m_sSelectionInfo.IsSelected = false;
-            m_cUserFunctions.EntitySelected(
-               *m_cSpace.GetRootEntityVector()[m_sSelectionInfo.Index]);
-         }
-         if(bWasSelected &&
-            (m_sSelectionInfo.Index != *punName)) {
-            /* The user clicked on a different entity from the selected one */
-            emit EntityDeselected(m_sSelectionInfo.Index);
-            m_cUserFunctions.EntityDeselected(
-               *m_cSpace.GetRootEntityVector()[m_sSelectionInfo.Index]);
-            m_sSelectionInfo.Index = *punName;
-            emit EntitySelected(m_sSelectionInfo.Index);
-            m_cUserFunctions.EntitySelected(
-               *m_cSpace.GetRootEntityVector()[m_sSelectionInfo.Index]);
-         }
-         else {
-            /* There was nothing selected, and the user clicked on an entity */
-            m_sSelectionInfo.IsSelected = true;
-            m_sSelectionInfo.Index = *punName;
-            emit EntitySelected(m_sSelectionInfo.Index);
-            m_cUserFunctions.EntitySelected(
-               *m_cSpace.GetRootEntityVector()[m_sSelectionInfo.Index]);
-         }
+
       }
+
+
+
+//      /* Used to store the viewport size */
+//      GLint nViewport[4];
+//      /* Set the selection buffer */
+//      glSelectBuffer(SELECT_BUFFER_SIZE, m_punSelectionBuffer);
+//      /* Switch to select mode */
+//      glRenderMode(GL_SELECT);
+//      /* Set the projection matrix */
+//      glMatrixMode(GL_PROJECTION);
+//      glLoadIdentity();
+//      /* Set the viewport */
+//      glGetIntegerv(GL_VIEWPORT, nViewport);
+//      gluPickMatrix(un_x,
+//                    nViewport[3] - un_y,
+//                    5, 5,
+//                    nViewport);
+//      gluPerspective(m_cCamera.GetActiveSettings().YFieldOfView.GetValue(),
+//                     ASPECT_RATIO,
+//                     0.1f, 1000.0f);
+//      glMatrixMode(GL_MODELVIEW);
+//      glLoadIdentity();
+//      m_cCamera.Look();
+//      /* Prepare name stack */
+//      glInitNames();
+//      /* Draw the objects */
+//      CEntity::TVector &vecEntities = m_cSpace.GetRootEntityVector();
+//      for (size_t i = 0; i < vecEntities.size(); ++i)
+//      {
+//         glPushName(i);
+//         glPushMatrix();
+//         //CallEntityOperation<CQTOpenGLOperationDrawNormal, CQTOpenGLWidget, void>(*this, *vecEntities[i]);
+//         glPopMatrix();
+//         glPopName();
+//      }
+//      glFlush();
+//      /* Return to normal rendering mode and get hit count */
+//      bool bWasSelected = m_sSelectionInfo.IsSelected;
+//      UInt32 unHits = glRenderMode(GL_RENDER);
+//      if (unHits == 0)
+//      {
+//         /* No hits, deselect what was selected */
+//         m_sSelectionInfo.IsSelected = false;
+//         if (bWasSelected)
+//         {
+//            emit EntityDeselected(m_sSelectionInfo.Index);
+//            m_cUserFunctions.EntityDeselected(
+//                  *m_cSpace.GetRootEntityVector()[m_sSelectionInfo.Index]);
+//         }
+//      }
+//      else
+//      {
+//         /* There are hits!
+//          * Process them, keeping the closest hit
+//          */
+//         GLuint *punByte = m_punSelectionBuffer;
+//         GLuint unMinZ = 0xffffffff;
+//         GLuint *punName = NULL;
+//         for (UInt32 i = 0; i < unHits; i++)
+//         {
+//            GLuint unNames = *punByte;
+//            ++punByte;
+//            if (*punByte < unMinZ)
+//            {
+//               unMinZ = *punByte;
+//               punName = punByte + 2;
+//            }
+//            punByte += unNames + 2;
+//         }
+//         /* Now *punName contains the closest hit */
+//         if (bWasSelected &&
+//             (m_sSelectionInfo.Index == *punName))
+//         {
+//            /* The user clicked on the selected entity, deselect it */
+//            emit EntityDeselected(m_sSelectionInfo.Index);
+//            m_sSelectionInfo.IsSelected = false;
+//            m_cUserFunctions.EntitySelected(
+//                  *m_cSpace.GetRootEntityVector()[m_sSelectionInfo.Index]);
+//         }
+//         if (bWasSelected &&
+//             (m_sSelectionInfo.Index != *punName))
+//         {
+//            /* The user clicked on a different entity from the selected one */
+//            emit EntityDeselected(m_sSelectionInfo.Index);
+//            m_cUserFunctions.EntityDeselected(
+//                  *m_cSpace.GetRootEntityVector()[m_sSelectionInfo.Index]);
+//            m_sSelectionInfo.Index = *punName;
+//            emit EntitySelected(m_sSelectionInfo.Index);
+//            m_cUserFunctions.EntitySelected(
+//                  *m_cSpace.GetRootEntityVector()[m_sSelectionInfo.Index]);
+//         }
+//         else
+//         {
+//            /* There was nothing selected, and the user clicked on an entity */
+//            m_sSelectionInfo.IsSelected = true;
+//            m_sSelectionInfo.Index = *punName;
+//            emit EntitySelected(m_sSelectionInfo.Index);
+//            m_cUserFunctions.EntitySelected(
+//                  *m_cSpace.GetRootEntityVector()[m_sSelectionInfo.Index]);
+//         }
+//      }
       doneCurrent();
       /* Redraw */
       update();
@@ -475,11 +582,12 @@ namespace argos {
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::DrawEntity(CPositionalEntity& c_entity) {
+   void CQTOpenGLWidget::DrawEntity(CPositionalEntity &c_entity)
+   {
       /* Get the position of the entity */
-      const CVector3& cPosition = c_entity.GetPosition();
+      const CVector3 &cPosition = c_entity.GetPosition();
       /* Get the orientation of the entity */
-      const CQuaternion& cOrientation = c_entity.GetOrientation();
+      const CQuaternion &cOrientation = c_entity.GetOrientation();
       CRadians cZAngle, cYAngle, cXAngle;
       cOrientation.ToEulerAngles(cZAngle, cYAngle, cXAngle);
       /* First, translate the entity */
@@ -493,11 +601,12 @@ namespace argos {
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::DrawEntity(CEmbodiedEntity& c_entity) {
+   void CQTOpenGLWidget::DrawEntity(CEmbodiedEntity &c_entity)
+   {
       /* Get the position of the entity */
-      const CVector3& cPosition = c_entity.GetOriginAnchor().Position;
+      const CVector3 &cPosition = c_entity.GetOriginAnchor().Position;
       /* Get the orientation of the entity */
-      const CQuaternion& cOrientation = c_entity.GetOriginAnchor().Orientation;
+      const CQuaternion &cOrientation = c_entity.GetOriginAnchor().Orientation;
       CRadians cZAngle, cYAngle, cXAngle;
       cOrientation.ToEulerAngles(cZAngle, cYAngle, cXAngle);
       /* First, translate the entity */
@@ -511,20 +620,25 @@ namespace argos {
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::DrawRays(CControllableEntity& c_entity) {
-      if(! c_entity.GetCheckedRays().empty()) {
+   void CQTOpenGLWidget::DrawRays(CControllableEntity &c_entity)
+   {
+      if (!c_entity.GetCheckedRays().empty())
+      {
          glDisable(GL_LIGHTING);
          glLineWidth(1.0f);
          glBegin(GL_LINES);
-         for(UInt32 i = 0; i < c_entity.GetCheckedRays().size(); ++i) {
-            if(c_entity.GetCheckedRays()[i].first) {
+         for (UInt32 i = 0; i < c_entity.GetCheckedRays().size(); ++i)
+         {
+            if (c_entity.GetCheckedRays()[i].first)
+            {
                glColor3f(1.0, 0.0, 1.0);
             }
-            else {
+            else
+            {
                glColor3f(0.0, 1.0, 1.0);
             }
-            const CVector3& cStart = c_entity.GetCheckedRays()[i].second.GetStart();
-            const CVector3& cEnd = c_entity.GetCheckedRays()[i].second.GetEnd();
+            const CVector3 &cStart = c_entity.GetCheckedRays()[i].second.GetStart();
+            const CVector3 &cEnd = c_entity.GetCheckedRays()[i].second.GetEnd();
             glVertex3f(cStart.GetX(), cStart.GetY(), cStart.GetZ());
             glVertex3f(cEnd.GetX(), cEnd.GetY(), cEnd.GetZ());
          }
@@ -532,8 +646,9 @@ namespace argos {
          glPointSize(5.0);
          glColor3f(0.0, 0.0, 0.0);
          glBegin(GL_POINTS);
-         for(UInt32 i = 0; i < c_entity.GetIntersectionPoints().size(); ++i) {
-            const CVector3& cPoint = c_entity.GetIntersectionPoints()[i];
+         for (UInt32 i = 0; i < c_entity.GetIntersectionPoints().size(); ++i)
+         {
+            const CVector3 &cPoint = c_entity.GetIntersectionPoints()[i];
             glVertex3f(cPoint.GetX(), cPoint.GetY(), cPoint.GetZ());
          }
          glEnd();
@@ -545,8 +660,9 @@ namespace argos {
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::DrawBoundingBox(CEmbodiedEntity& c_entity) {
-      const SBoundingBox& sBBox = c_entity.GetBoundingBox();
+   void CQTOpenGLWidget::DrawBoundingBox(CEmbodiedEntity &c_entity)
+   {
+      const SBoundingBox &sBBox = c_entity.GetBoundingBox();
       glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
       glDisable(GL_LIGHTING);
       glLineWidth(1.0f);
@@ -601,50 +717,60 @@ namespace argos {
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::PlayExperiment() {
+   void CQTOpenGLWidget::PlayExperiment()
+   {
       m_bFastForwarding = false;
-      if(nTimerId != -1) killTimer(nTimerId);
+      if (nTimerId != -1) killTimer(nTimerId);
       nTimerId = startTimer(CPhysicsEngine::GetSimulationClockTick() * 1000.0f);
    }
 
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::FastForwardExperiment() {
+   void CQTOpenGLWidget::FastForwardExperiment()
+   {
       m_nFrameCounter = 0;
       m_bFastForwarding = true;
-      if(nTimerId != -1) killTimer(nTimerId);
+      if (nTimerId != -1) killTimer(nTimerId);
       nTimerId = startTimer(1);
    }
 
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::PauseExperiment() {
+   void CQTOpenGLWidget::PauseExperiment()
+   {
       m_bFastForwarding = false;
-      if(nTimerId != -1) killTimer(nTimerId);
+      if (nTimerId != -1) killTimer(nTimerId);
       nTimerId = -1;
    }
 
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::StepExperiment() {
-      if(!m_cSimulator.IsExperimentFinished()) {
+   void CQTOpenGLWidget::StepExperiment()
+   {
+      if (!m_cSimulator.IsExperimentFinished())
+      {
          m_cSimulator.UpdateSpace();
-         if(m_bFastForwarding) {
+         if (m_bFastForwarding)
+         {
             /* Frame dropping happens only in fast-forward */
             m_nFrameCounter = m_nFrameCounter % m_nDrawFrameEvery;
-            if(m_nFrameCounter == 0) {
+            if (m_nFrameCounter == 0)
+            {
                update();
             }
             ++m_nFrameCounter;
-         } else {
+         }
+         else
+         {
             update();
          }
          emit StepDone(m_cSpace.GetSimulationClock());
       }
-      else {
+      else
+      {
          PauseExperiment();
          emit ExperimentDone();
       }
@@ -653,10 +779,11 @@ namespace argos {
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::ResetExperiment() {
+   void CQTOpenGLWidget::ResetExperiment()
+   {
       m_cSimulator.Reset();
       delete m_pcGroundTexture;
-      if(m_bUsingFloorTexture) delete m_pcFloorTexture;
+      if (m_bUsingFloorTexture) delete m_pcFloorTexture;
       initializeGL();
       update();
    }
@@ -664,42 +791,49 @@ namespace argos {
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::SetDrawFrameEvery(SInt32 n_every) {
+   void CQTOpenGLWidget::SetDrawFrameEvery(SInt32 n_every)
+   {
       m_nDrawFrameEvery = n_every;
    }
 
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::SetGrabFrame(bool b_grab_on) {
+   void CQTOpenGLWidget::SetGrabFrame(bool b_grab_on)
+   {
       m_sFrameGrabData.Grabbing = b_grab_on;
    }
 
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::SetCamera(int n_camera) {
+   void CQTOpenGLWidget::SetCamera(int n_camera)
+   {
       m_cCamera.SetActiveSettings(n_camera);
       update();
-      QToolTip::showText(pos() + geometry().center(), QString("Current camera: #%1").arg(n_camera+1));
+      QToolTip::showText(pos() + geometry().center(), QString("Current camera: #%1").arg(n_camera + 1));
    }
 
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::SetCameraFocalLength(double f_length) {
+   void CQTOpenGLWidget::SetCameraFocalLength(double f_length)
+   {
       m_cCamera.GetActiveSettings().LensFocalLength = f_length / 1000.0f;
       m_cCamera.GetActiveSettings().CalculateYFieldOfView();
       m_cCamera.GetActiveSettings().CalculateSensitivity();
-      QToolTip::showText(pos() + geometry().center(), QString("Motion sens = %1").arg(m_cCamera.GetActiveSettings().MotionSensitivity));
+      QToolTip::showText(pos() + geometry().center(),
+                         QString("Motion sens = %1").arg(m_cCamera.GetActiveSettings().MotionSensitivity));
       update();
    }
 
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::KeyPressed(QKeyEvent* pc_event) {
-      switch(pc_event->key()) {
+   void CQTOpenGLWidget::KeyPressed(QKeyEvent *pc_event)
+   {
+      switch (pc_event->key())
+      {
          case Qt::Key_W:
          case Qt::Key_Up:
             /* Forwards */
@@ -744,8 +878,10 @@ namespace argos {
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::KeyReleased(QKeyEvent* pc_event) {
-      switch(pc_event->key()) {
+   void CQTOpenGLWidget::KeyReleased(QKeyEvent *pc_event)
+   {
+      switch (pc_event->key())
+      {
          case Qt::Key_W:
          case Qt::Key_Up:
             /* Forwards */
@@ -790,7 +926,8 @@ namespace argos {
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::DrawArena() {
+   void CQTOpenGLWidget::DrawArena()
+   {
       CVector3 cArenaSize(m_cSpace.GetArenaSize());
       CVector3 cArenaMinCorner(m_cSpace.GetArenaCenter().GetX() - cArenaSize.GetX() * 0.5f,
                                m_cSpace.GetArenaCenter().GetY() - cArenaSize.GetY() * 0.5f,
@@ -806,9 +943,11 @@ namespace argos {
       /* The texture covers the object like a decal */
       glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
 #ifdef ARGOS_WITH_FREEIMAGE
-      if(m_bUsingFloorTexture) {
+      if (m_bUsingFloorTexture)
+      {
          /* Use the image as texture */
-         if(m_cSpace.GetFloorEntity().HasChanged()) {
+         if (m_cSpace.GetFloorEntity().HasChanged())
+         {
             /* Create an image to use as texture */
             m_pcFloorTexture->destroy();
             m_pcFloorTexture->create();
@@ -822,13 +961,18 @@ namespace argos {
          /* Draw the floor entity along with its texture */
          m_pcFloorTexture->bind();
          glBegin(GL_QUADS);
-         glTexCoord2d(0.0f, 1.0f); glVertex3f(cArenaMinCorner.GetX(), cArenaMinCorner.GetY(), 0.0f);
-         glTexCoord2d(1.0f, 1.0f); glVertex3f(cArenaMaxCorner.GetX(), cArenaMinCorner.GetY(), 0.0f);
-         glTexCoord2d(1.0f, 0.0f); glVertex3f(cArenaMaxCorner.GetX(), cArenaMaxCorner.GetY(), 0.0f);
-         glTexCoord2d(0.0f, 0.0f); glVertex3f(cArenaMinCorner.GetX(), cArenaMaxCorner.GetY(), 0.0f);
+         glTexCoord2d(0.0f, 1.0f);
+         glVertex3f(cArenaMinCorner.GetX(), cArenaMinCorner.GetY(), 0.0f);
+         glTexCoord2d(1.0f, 1.0f);
+         glVertex3f(cArenaMaxCorner.GetX(), cArenaMinCorner.GetY(), 0.0f);
+         glTexCoord2d(1.0f, 0.0f);
+         glVertex3f(cArenaMaxCorner.GetX(), cArenaMaxCorner.GetY(), 0.0f);
+         glTexCoord2d(0.0f, 0.0f);
+         glVertex3f(cArenaMinCorner.GetX(), cArenaMaxCorner.GetY(), 0.0f);
          glEnd();
       }
-      else {
+      else
+      {
 #endif
          /* Wrap the texture at the edges, which in this case means that it is repeated */
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -836,10 +980,14 @@ namespace argos {
          m_pcGroundTexture->bind();
          /* Draw the floor along with its texture */
          glBegin(GL_QUADS);
-         glTexCoord2f(0.0f, cArenaSize.GetY());              glVertex3f(cArenaMinCorner.GetX(), cArenaMinCorner.GetY(), 0.0f);
-         glTexCoord2f(cArenaSize.GetX(), cArenaSize.GetY()); glVertex3f(cArenaMaxCorner.GetX(), cArenaMinCorner.GetY(), 0.0f);
-         glTexCoord2f(cArenaSize.GetX(), 0.0f);              glVertex3f(cArenaMaxCorner.GetX(), cArenaMaxCorner.GetY(), 0.0f);
-         glTexCoord2f(0.0f, 0.0f);                           glVertex3f(cArenaMinCorner.GetX(), cArenaMaxCorner.GetY(), 0.0f);
+         glTexCoord2f(0.0f, cArenaSize.GetY());
+         glVertex3f(cArenaMinCorner.GetX(), cArenaMinCorner.GetY(), 0.0f);
+         glTexCoord2f(cArenaSize.GetX(), cArenaSize.GetY());
+         glVertex3f(cArenaMaxCorner.GetX(), cArenaMinCorner.GetY(), 0.0f);
+         glTexCoord2f(cArenaSize.GetX(), 0.0f);
+         glVertex3f(cArenaMaxCorner.GetX(), cArenaMaxCorner.GetY(), 0.0f);
+         glTexCoord2f(0.0f, 0.0f);
+         glVertex3f(cArenaMinCorner.GetX(), cArenaMaxCorner.GetY(), 0.0f);
          glEnd();
 #ifdef ARGOS_WITH_FREEIMAGE
       }
@@ -892,88 +1040,38 @@ namespace argos {
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::DrawAxes() {
+   void CQTOpenGLWidget::DrawAxes()
+   {
    }
 
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::timerEvent(QTimerEvent* pc_event) {
+   void CQTOpenGLWidget::timerEvent(QTimerEvent *pc_event)
+   {
       StepExperiment();
-      printf("in timer\n");
+      //printf("in timer\n");
    }
 
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::mousePressEvent(QMouseEvent* pc_event) {
-      /*
-       * Mouse press without shift
-       * Either pure press, or press + CTRL
-       */
-      if(! (pc_event->modifiers() & Qt::ShiftModifier)) {
-         m_bMouseGrabbed = true;
-         m_cMouseGrabPos = pc_event->pos();
-      }
-      /*
-       * Mouse press with shift
-       */
-      else {
-         m_bMouseGrabbed = false;
+   void CQTOpenGLWidget::mousePressEvent(QMouseEvent *pc_event)
+   {
+      m_bMouseGrabbed = true;
+      m_cMouseGrabPos = pc_event->pos();
+      if (pc_event->buttons() == Qt::LeftButton)
          SelectInScene(pc_event->pos().x(),
                        pc_event->pos().y());
-      }
    }
 
    /****************************************/
    /****************************************/
 
-   void CQTOpenGLWidget::mouseReleaseEvent(QMouseEvent* pc_event) {
-      /*
-       * Mouse grabbed, selected entity, CTRL pressed
-       */
-      if(m_bMouseGrabbed &&
-         m_sSelectionInfo.IsSelected &&
-         (pc_event->modifiers() & Qt::ControlModifier)) {
-         /* Treat selected entity as an embodied entity */
-         CEmbodiedEntity* pcEntity = dynamic_cast<CEmbodiedEntity*>(
-            m_cSpace.GetRootEntityVector()[m_sSelectionInfo.Index]);
-         if(pcEntity == NULL) {
-            /* Treat selected entity as a composable entity with an embodied component */
-            CComposableEntity* pcCompEntity = dynamic_cast<CComposableEntity*>(
-               m_cSpace.GetRootEntityVector()[m_sSelectionInfo.Index]);
-            if(pcCompEntity != NULL && pcCompEntity->HasComponent("body")) {
-               pcEntity = &pcCompEntity->GetComponent<CEmbodiedEntity>("body");
-            }
-            else {
-               /* All conversions failed, get out */
-               m_bMouseGrabbed = false;
-               return;
-            }
-         }
-         /*
-          * If we get here, pcEntity is set to a non-NULL value
-          * Move the entity to the wanted place
-          */
-         /* Create a plane coincident with the world XY plane, centered at the entity position */
-         CPlane cXYPlane(pcEntity->GetOriginAnchor().Position, CVector3::Z);
-         /* Create a ray from the image pixel to the world */
-         CRay3 cMouseRay =
-            RayFromWindowCoord(pc_event->pos().x(),
-                               pc_event->pos().y());
-         /* Calculate the new entity position as the intersection of the projected mouse position
-            with the plane created before */
-         CVector3 cNewPos;
-         if(cMouseRay.Intersects(cXYPlane, cNewPos)) {
-            pcEntity->MoveTo(cNewPos,
-                             pcEntity->GetOriginAnchor().Orientation);
-            /* Entity moved, redraw */
-            update();
-         }
-      }
-      /*
-       * Mouse was grabbed, button released -> ungrab mouse
-       */
+   void CQTOpenGLWidget::mouseReleaseEvent(QMouseEvent *pc_event)
+   {
+
+      m_sSelectionInfo.IsSelected = false;
       m_bMouseGrabbed = false;
    }
 
@@ -984,8 +1082,8 @@ namespace argos {
    {
 
       CQTOpenGLCamera::SSettings &cs = m_cCamera.GetActiveSettings();
-      cs.Target = CVector3(0,0,0);
-      cs.Up = CVector3(0,0,1);
+      cs.Target = CVector3(0, 0, 0);
+      cs.Up = CVector3(0, 0, 1);
       CRotationMatrix3 ZR(CRadians(-xangle), CRadians(0), CRadians(0));
       CRotationMatrix3 XR(CRadians(0), CRadians(yangle), CRadians(0));
       cs.Position = ZR * (XR * CVector3(-2 * distance, 0, 2 * distance));
@@ -993,17 +1091,18 @@ namespace argos {
       cs.Position = cs.Position + CVector3(xpos, ypos, 0);
    }
 
-    void CQTOpenGLWidget::wheelEvent(QWheelEvent* pc_event) {
+   void CQTOpenGLWidget::wheelEvent(QWheelEvent *pc_event)
+   {
       if (pc_event->delta() > 0)
          distance /= zscale;
       else
          distance *= zscale;
-      printf("wheel %d %f\n", pc_event->delta(), distance);
+      //printf("wheel %d %f\n", pc_event->delta(), distance);
       updatecam();
       update();
    }
 
-    void CQTOpenGLWidget::mouseMoveEvent(QMouseEvent *pc_event)
+   void CQTOpenGLWidget::mouseMoveEvent(QMouseEvent *pc_event)
    {
       /*
        * Moving while mouse grabbed -> camera movement
@@ -1011,122 +1110,136 @@ namespace argos {
       //printf("%10d %10d %x\n", pc_event->x(), pc_event->y(), pc_event->buttons());
       if (m_bMouseGrabbed)
       {
-         if (!(pc_event->modifiers() & Qt::ControlModifier))
+         // Left button    - move object
+         // Right button   - spin
+         // Wheel          - zoom
+         // Middle button  - pan
+         if (pc_event->buttons() == Qt::RightButton)
          {
-            /*
-             * Camera movement
-             */
-            if (1)
+            // Move camera around the surface of a sphere centered at the current gui origin.
+            // The gui origin is a point on the ground plane. We move this using the pan
+            QPoint mpos = pc_event->pos();
+            QPoint delta(mpos - m_cMouseGrabPos);
+            float dx = delta.x() * xrscale;
+            float dy = delta.y() * yrscale;
+
+            yangle = dy + old_yangle;
+            xangle = dx + old_xangle;
+            //printf("dx:%10d dy:%10d xa:%10f ya:%10f\n", delta.x(), delta.y(), xangle, yangle);
+            old_xangle = xangle;
+            old_yangle = yangle;
+
+            // Camera is defined by position, target, and up vectors
+            //cs.Position = CVector3(0,0,0);
+            //printf("%10f %10f %10f\n", cs.Position.GetX(), cs.Position.GetY(), cs.Position.GetZ());
+
+            updatecam();
+
+            //m_cCamera.RotateGlobalZ(CRadians(xangle));
+            m_cMouseGrabPos = mpos;
+            update();
+         }
+         else if (pc_event->buttons() == Qt::MiddleButton)
+         {
+            QPoint mpos = pc_event->pos();
+            QPoint delta(mpos - m_cMouseGrabPos);
+            float lx, ly;
+            lx = delta.x() * xmscale;
+            ly = delta.y() * ymscale;
+            // transform to world frame
+            float dx = lx * cos(-xangle + M_PI_2) - ly * sin(-xangle + M_PI_2);
+            float dy = lx * sin(-xangle + M_PI_2) + ly * cos(-xangle + M_PI_2);
+            xpos = dx + old_xpos;
+            ypos = dy + old_ypos;
+            //printf("%f %f\n", xpos, ypos);
+            old_xpos = xpos;
+            old_ypos = ypos;
+            updatecam();
+            m_cMouseGrabPos = mpos;
+            update();
+         }
+
+         else if (m_sSelectionInfo.IsSelected && (pc_event->buttons() == Qt::LeftButton))
+         {
+            /* Treat selected entity as an embodied entity */
+            CEmbodiedEntity *pcEntity = dynamic_cast<CEmbodiedEntity *>(
+                  m_cSpace.GetRootEntityVector()[m_sSelectionInfo.Index]);
+            if (pcEntity == NULL)
             {
-               // Right button   - spin
-               // Wheel          - zoom
-               // Middle button  - pan
-               if (pc_event->buttons() == Qt::RightButton)
+               /* Treat selected entity as a composable entity with an embodied component */
+               CComposableEntity *pcCompEntity = dynamic_cast<CComposableEntity *>(
+                     m_cSpace.GetRootEntityVector()[m_sSelectionInfo.Index]);
+               if (pcCompEntity != NULL && pcCompEntity->HasComponent("body"))
                {
-                  // Move camera around the surface of a sphere centered at the current gui origin.
-                  // The gui origin is a point on the ground plane. We move this using the pan
-                  QPoint mpos = pc_event->pos();
-                  QPoint delta(mpos - m_cMouseGrabPos);
-                  float dx = delta.x() * xrscale;
-                  float dy = delta.y() * yrscale;
-
-                  yangle = dy + old_yangle;
-                  xangle = dx + old_xangle;
-                  //printf("dx:%10d dy:%10d xa:%10f ya:%10f\n", delta.x(), delta.y(), xangle, yangle);
-                   old_xangle = xangle;
-                   old_yangle = yangle;
-
-                  // Camera is defined by position, target, and up vectors
-                  //cs.Position = CVector3(0,0,0);
-                  //printf("%10f %10f %10f\n", cs.Position.GetX(), cs.Position.GetY(), cs.Position.GetZ());
-
-                   updatecam();
-
-                  //m_cCamera.RotateGlobalZ(CRadians(xangle));
-                  m_cMouseGrabPos = mpos;
-                  update();
+                  pcEntity = &pcCompEntity->GetComponent<CEmbodiedEntity>("body");
                }
-                else if (pc_event->buttons() == Qt::MiddleButton)
+               else
                {
-                  QPoint mpos = pc_event->pos();
-                  QPoint delta(mpos - m_cMouseGrabPos);
-                   float lx, ly;
-                    lx = delta.x() * xmscale;
-                    ly = delta.y() * ymscale;
-                    // transform to world frame
-                    float dx = lx * cos(-xangle + M_PI_2) - ly * sin(-xangle + M_PI_2);
-                    float dy = lx * sin(-xangle + M_PI_2) + ly * cos(-xangle + M_PI_2);
-                    xpos = dx + old_xpos;
-                    ypos = dy + old_ypos;
-                   printf("%f %f\n", xpos, ypos);
-                  old_xpos = xpos;
-                  old_ypos = ypos;
-                  updatecam();
-                  m_cMouseGrabPos = mpos;
-                   update();
+                  /* All conversions failed, get out */
+                  m_bMouseGrabbed = false;
+                  return;
                }
             }
-            else
-             {
-                 if (pc_event->buttons() == Qt::LeftButton)
-                 {
-                     if (m_bInvertMouse) m_cCamera.Rotate(pc_event->pos() - m_cMouseGrabPos);
-                     else m_cCamera.Rotate(m_cMouseGrabPos - pc_event->pos());
-                     m_cMouseGrabPos = pc_event->pos();
-                     //printf("%10f %10f\n", m_cMouseGrabPos.x(), m_cMouseGrabPos.y());
-                     update();
-                 }
-                 else if (pc_event->buttons() == Qt::RightButton)
-                 {
-                     QPoint cDelta(pc_event->pos() - m_cMouseGrabPos);
-                     m_cCamera.Move(-cDelta.y(), cDelta.x(), 0);
-                     m_cMouseGrabPos = pc_event->pos();
-                     update();
-                 }
-                 else if (pc_event->buttons() == Qt::MidButton)
-                 {
-                     QPoint cDelta(pc_event->pos() - m_cMouseGrabPos);
-                     m_cCamera.Move(0, 0, cDelta.y());
-                     m_cMouseGrabPos = pc_event->pos();
-                     update();
-                 }
-             }
+            /*
+             * If we get here, pcEntity is set to a non-NULL value
+             * Move the entity to the wanted place
+             */
+            /* Create a plane coincident with the world XY plane, centered at the entity position */
+            CPlane cXYPlane(pcEntity->GetOriginAnchor().Position, CVector3::Z);
+            /* Create a ray from the image pixel to the world */
+            CRay3 cMouseRay =
+                  RayFromWindowCoord(pc_event->pos().x(),
+                                     pc_event->pos().y());
+            /* Calculate the new entity position as the intersection of the projected mouse position
+               with the plane created before */
+            CVector3 cNewPos;
+            if (cMouseRay.Intersects(cXYPlane, cNewPos))
+            {
+               pcEntity-> MoveTo(cNewPos, pcEntity->GetOriginAnchor().Orientation);
+               /* Entity moved, redraw */
+               update();
+            }
          }
+
       }
    }
 
-   /****************************************/
-   /****************************************/
+/****************************************/
+/****************************************/
 
-   void CQTOpenGLWidget::keyPressEvent(QKeyEvent* pc_event) {
+   void CQTOpenGLWidget::keyPressEvent(QKeyEvent *pc_event)
+   {
       m_cUserFunctions.KeyPressed(pc_event);
    }
 
-   /****************************************/
-   /****************************************/
+/****************************************/
+/****************************************/
 
-   void CQTOpenGLWidget::keyReleaseEvent(QKeyEvent* pc_event) {
+   void CQTOpenGLWidget::keyReleaseEvent(QKeyEvent *pc_event)
+   {
       m_cUserFunctions.KeyReleased(pc_event);
    }
 
-   /****************************************/
-   /****************************************/
+/****************************************/
+/****************************************/
 
-   void CQTOpenGLWidget::reactToKeyEvent() {
+   void CQTOpenGLWidget::reactToKeyEvent()
+   {
       SInt32 nForwardsBackwards = 0;
       SInt32 nSideways = 0;
       SInt32 nUpDown = 0;
 
-      if(m_mapPressedKeys[DIRECTION_UP])        nUpDown++;
-      if(m_mapPressedKeys[DIRECTION_DOWN])      nUpDown--;
-      if(m_mapPressedKeys[DIRECTION_LEFT])      nSideways++;
-      if(m_mapPressedKeys[DIRECTION_RIGHT])     nSideways--;
-      if(m_mapPressedKeys[DIRECTION_FORWARDS])  nForwardsBackwards++;
-      if(m_mapPressedKeys[DIRECTION_BACKWARDS]) nForwardsBackwards--;
+      if (m_mapPressedKeys[DIRECTION_UP]) nUpDown++;
+      if (m_mapPressedKeys[DIRECTION_DOWN]) nUpDown--;
+      if (m_mapPressedKeys[DIRECTION_LEFT]) nSideways++;
+      if (m_mapPressedKeys[DIRECTION_RIGHT]) nSideways--;
+      if (m_mapPressedKeys[DIRECTION_FORWARDS]) nForwardsBackwards++;
+      if (m_mapPressedKeys[DIRECTION_BACKWARDS]) nForwardsBackwards--;
 
-      if(nForwardsBackwards != 0 ||
-         nSideways != 0 ||
-         nUpDown != 0) {
+      if (nForwardsBackwards != 0 ||
+          nSideways != 0 ||
+          nUpDown != 0)
+      {
          m_cCamera.Move(15 * nForwardsBackwards,
                         15 * nSideways,
                         15 * nUpDown);
@@ -1134,34 +1247,41 @@ namespace argos {
       }
    }
 
-   /****************************************/
-   /****************************************/
+/****************************************/
+/****************************************/
 
-   void CQTOpenGLWidget::resizeEvent(QResizeEvent* pc_event) {
+   void CQTOpenGLWidget::resizeEvent(QResizeEvent *pc_event)
+   {
       /* Call parent's resize event handler */
       QOpenGLWidget::resizeEvent(pc_event);
       /* Show new window size */
-      QToolTip::showText(pos() + geometry().center(), QString("Size: %1 x %2").arg(pc_event->size().width()).arg(pc_event->size().height()));
+      QToolTip::showText(pos() + geometry().center(),
+                         QString("Size: %1 x %2").arg(pc_event->size().width()).arg(pc_event->size().height()));
    }
 
-   /****************************************/
-   /****************************************/
+/****************************************/
+/****************************************/
 
-   void CQTOpenGLWidget::SFrameGrabData::Init(TConfigurationNode& t_tree) {
-      if(NodeExists(t_tree, "frame_grabbing")) {
-         TConfigurationNode& tNode = GetNode(t_tree, "frame_grabbing");
+   void CQTOpenGLWidget::SFrameGrabData::Init(TConfigurationNode &t_tree)
+   {
+      if (NodeExists(t_tree, "frame_grabbing"))
+      {
+         TConfigurationNode &tNode = GetNode(t_tree, "frame_grabbing");
          std::string strBuffer;
          /* Parse directory, removing trailing '/' */
          strBuffer = ".";
          GetNodeAttributeOrDefault(tNode, "directory", strBuffer, strBuffer);
          size_t unEndPos = strBuffer.find_last_not_of("/ \t");
-         if(unEndPos != std::string::npos) {
-            strBuffer = strBuffer.substr(0, unEndPos+1);
+         if (unEndPos != std::string::npos)
+         {
+            strBuffer = strBuffer.substr(0, unEndPos + 1);
          }
          Directory = strBuffer.c_str();
          QDir cDirectory(Directory);
-         if(!cDirectory.exists()) {
-            THROW_ARGOSEXCEPTION("QTOpenGL: frame grabbing directory \"" << strBuffer << "\" does not exist. Create it first!");
+         if (!cDirectory.exists())
+         {
+            THROW_ARGOSEXCEPTION(
+                  "QTOpenGL: frame grabbing directory \"" << strBuffer << "\" does not exist. Create it first!");
          }
          /* Parse base name */
          strBuffer = "frame_";
@@ -1176,7 +1296,7 @@ namespace argos {
       }
    }
 
-   /****************************************/
-   /****************************************/
+/****************************************/
+/****************************************/
 
 }

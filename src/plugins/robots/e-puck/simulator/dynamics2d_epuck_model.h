@@ -31,7 +31,9 @@ namespace argos {
       virtual void Reset();
 
       virtual void UpdateFromEntityStatus();
-      
+
+      void UpdatePerspectiveCameraAnchor(SAnchor& s_anchor);
+
    private:
 
       CEPuckEntity& m_cEPuckEntity;
@@ -41,6 +43,8 @@ namespace argos {
 
       const Real* m_fCurrentWheelVelocity;
 
+      cpBody *ptBody;
+      cpShape *ptShape;
    };
 
 }

@@ -41,7 +41,10 @@ namespace argos {
                       EPUCK_INTERWHEEL_DISTANCE),
       m_fCurrentWheelVelocity(m_cWheeledEntity.GetWheelVelocities()) {
       /* Create the body with initial position and orientation */
-      cpBody* ptBody =
+      RegisterAnchorMethod<CDynamics2DEPuckModel>(
+         GetEmbodiedEntity().GetAnchor("perspective_camera"),
+         &CDynamics2DEPuckModel::UpdatePerspectiveCameraAnchor);
+      ptBody =
          cpSpaceAddBody(GetDynamics2DEngine().GetPhysicsSpace(),
                         cpBodyNew(EPUCK_MASS,
                                   cpMomentForCircle(EPUCK_MASS,
@@ -54,7 +57,7 @@ namespace argos {
       GetEmbodiedEntity().GetOriginAnchor().Orientation.ToEulerAngles(cZAngle, cYAngle, cXAngle);
       cpBodySetAngle(ptBody, cZAngle.GetValue());
       /* Create the body shape */
-      cpShape* ptShape =
+      ptShape =
          cpSpaceAddShape(GetDynamics2DEngine().GetPhysicsSpace(),
                          cpCircleShapeNew(ptBody,
                                           EPUCK_RADIUS,
@@ -98,6 +101,13 @@ namespace argos {
       }
    }
 
+   void CDynamics2DEPuckModel::UpdatePerspectiveCameraAnchor(SAnchor& s_anchor) {
+      s_anchor.Position.SetX(ptBody->p.x + s_anchor.OffsetPosition.GetX());
+      s_anchor.Position.SetY(ptBody->p.y + s_anchor.OffsetPosition.GetY());
+      s_anchor.Orientation =
+         s_anchor.OffsetOrientation *
+         CQuaternion(CRadians(ptBody->a), CVector3::Z);
+   }
    /****************************************/
    /****************************************/
 
